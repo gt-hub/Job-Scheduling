@@ -5,12 +5,12 @@ JFLAGS = -g
 	$(JC) $(JFLAGS) $*.java
 
 CLASSES = \
+	CommandParser.java \
 	RBNode.java \
-        RBTree.java \
-        MinHeapNode.java \
-        MinHeap.java \
-        CommandParser.java \
-        RisingCity.java
+	RBTree.java \
+	MinHeapNode.java \
+	MinHeap.java \
+	risingCity.java 
 	
 default: classes
 

@@ -1,145 +1,116 @@
 import java.io.File;
-import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.Scanner;
 
-public class RisingCity {
+/**
+ * @author Gowtham
+ * risingCity is the main class that makes use of the instances of RBTree and MinHeap to solve the risingCity problem.
+ */
+public class risingCity {
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
 
-        String inputFileName = "/Users/gowtham/Desktop/Sample_input1.txt";
-        String outputFileName = "/Users/gowtham/Desktop/output_file.txt";
+        String inputFileName = new String();
+        if(args[0].length()>0)
+            inputFileName = args[0];        //The file name of input.
+        String outputFileName = "output_file.txt";       //The file name of output.
 
         File inputFile = new File(inputFileName);
         Scanner scanner = new Scanner(inputFile);
 
-        File outputFile = new File(inputFileName);
-        String output = new String("");
-        CommandParser parser = new CommandParser();
-        CommandParser cmd = null;
 
-        PrintWriter writer = new PrintWriter(outputFileName);
+        String output = new String("");     //To store the output before printing it to a File.
+        CommandParser parser = new CommandParser();     //Instance of the parser for the file.
+        CommandParser cmd = null;       //Instance to hold the values of parsed command from the file.
 
-        RBTree rbTree = new RBTree();
-        MinHeap minHeap = new MinHeap();
-        MinHeapNode minBuildingNode = null;
-        int globalTime = 0, timeElapsedForMinBuilding = 0;
-        while(scanner.hasNextLine()||cmd!=null||!rbTree.isEmpty()){
+        PrintWriter writer = new PrintWriter(outputFileName);       //To write the output to the Output file.
 
-            if(cmd==null&&scanner.hasNextLine())
+        RBTree rbTree = new RBTree();       //Instance of Red-Black tree.
+        MinHeap minHeap = new MinHeap();        //Instance of Min-Heap.
+        MinHeapNode minBuildingNode = null;     //Node to hold the building with minimum executed time.
+        int globalTime = 0;         //Counter to keep track of the total number of days.
+        int timeElapsedForMinBuilding = 0;      //Counter to keep track of the number of days we have worked continuously on a building.
+
+        /**
+         * To read the file, parse it and execute the commands in it until there no more commands left and all the buildings have been completed.
+         */
+        while (scanner.hasNextLine() || cmd != null || !rbTree.isEmpty()) {
+
+            /**
+             * To read the command from the file.
+             */
+            if (cmd == null && scanner.hasNextLine())
                 cmd = parser.parse(scanner.nextLine());
 
-            // Process Command when insertion time equals to insertion time.
-            while(cmd!=null){
-                if(globalTime==cmd.getInsertionTime()){
-                    switch (cmd.getCmd()){
-
-                        case "Insert":
-                            RBNode rbNode = rbTree.addNode(cmd.getArg1(),cmd.getArg2());
-                            minHeap.addNode(0,rbNode);
+            /**
+             * To parse and execute the respective command when the time matches the global counter.
+             */
+            while (cmd != null) {
+                if (globalTime == cmd.getInsertionTime()) {     //If the time of command is equal to the global time, we execute the command.
+                    switch (cmd.getCmd()) {
+                        case "Insert":      //We insert the building into Red-black tree and the min-heap.
+                            RBNode rbNode = rbTree.addNode(cmd.getArg1(), cmd.getArg2());
+                            minHeap.addNode(0, rbNode);
                             break;
-                        case "PrintBuliding":
+                        case "PrintBuilding":       //We print the building tuple from the red-black tree.
                             output = rbTree.print(cmd.getArg1());
                             writer.println(output);
                             //Write to File
                             break;
-                        case "PrintBuliding2":
-                            output = rbTree.print(cmd.getArg1(),cmd.getArg2());
-                            System.out.println(output);
+                        case "PrintBuilding2":      //We print the set of tuples from the red-black tree.
+                            output = rbTree.print(cmd.getArg1(), cmd.getArg2());
                             writer.println(output);
-                            //Write to File
                             break;
                     }
-                    cmd = scanner.hasNextLine() ? parser.parse(scanner.nextLine()) : null;
-                }
-                else
+                    cmd = scanner.hasNextLine() ? parser.parse(scanner.nextLine()) : null;      //We read the next input line from the file.
+                } else
                     break;
             }
 
-            //To update the execution time for Min Building
-            if(timeElapsedForMinBuilding % 5 == 0){
+            /**
+             * If the executed time for a building becomes the total time needed for it's construction, we remove the respective node from Red-Black tree.
+             */
+            if (minBuildingNode != null && minBuildingNode.getTotalTime() - minBuildingNode.getExecTime() == 0) {
+                writer.println("(" + minBuildingNode.getBuildingNum() + ", " + globalTime + ")" + " ");     //We print the building tuple on completion of construction.
+                rbTree.remove(minBuildingNode.getBuildingNum());        //We remove that building from Red-Black tree.
+                minBuildingNode = minHeap.getMin();     //Now we pick up a new building with minimum execution time.
+                minHeap.remove(0);      //After that we remove that minimum building from the min-heap.
+                timeElapsedForMinBuilding = 0;      //We reset the continuous time spent on that building construction.
+            }
+            /**
+             * If we construct a building for continuously 5 days, then we re-insert the node into min-heap and again choose a node with minimum executed time.
+             */
+            else if (timeElapsedForMinBuilding % 5 == 0) {
 
-                if(minBuildingNode!=null && minBuildingNode.getTotalTime() - minBuildingNode.getExecTime() ==0){
-                    int index = minHeap.getIndex(minBuildingNode);
+                if(minBuildingNode!=null)
+                    minHeap.addNode(minBuildingNode.getExecTime(), minBuildingNode.rbNode);     //We reinsert the building back into the min-heap.
 
-                    System.out.println("("+ minBuildingNode.getBuildingNum() +", "+globalTime+")" + " ");
-
-                    writer.println("("+ minBuildingNode.getBuildingNum() +", "+globalTime+")" + " ");
-                    rbTree.remove(minBuildingNode.getBuildingNum());
-                    minHeap.remove(index);
-                }
-
-                minBuildingNode = minHeap.getMin();
-                //System.out.println(minBuildingNode.rbNode.buildNum + "" + minBuildingNode.getExecTime());
-                timeElapsedForMinBuilding = 0;
+                minBuildingNode = minHeap.getMin();    //Now we pick up a new building with minimum execution time.
+                minHeap.remove(0);      //After that we remove that minimum building from the min-heap.
+                timeElapsedForMinBuilding = 0;      //We reset the continuous time spent on that building construction.
             }
 
-            if(minBuildingNode!=null && minBuildingNode.getTotalTime() - minBuildingNode.getExecTime() ==0){
-                int index = minHeap.getIndex(minBuildingNode);
-
-                System.out.println("("+ minBuildingNode.getBuildingNum() +", "+globalTime+")" + " ");
-
-                writer.println("("+ minBuildingNode.getBuildingNum() +", "+globalTime+")" + " ");
-                rbTree.remove(minBuildingNode.getBuildingNum());
-                minHeap.remove(index);
-                minBuildingNode = minHeap.getMin();
-                timeElapsedForMinBuilding=0;
-            }else if(minBuildingNode!=null){
-                int index = minHeap.getIndex(minBuildingNode);
-                minHeap.increaseKey(index, 1);
+            /**
+             * If there exists a building with minimum executed time, we then increase it's executed time by 1 day.
+             */
+            if (minBuildingNode != null) {
+                minBuildingNode.execTime+=1;        //We increase the execution of the minimum building by 1.
             }
 
-            timeElapsedForMinBuilding++;
-            globalTime++;
+            /**
+             * We increase the counter for working a building with minimum executed time.
+             */
+            if(minBuildingNode!=null)
+                timeElapsedForMinBuilding++;        //We increase the counter for the continuous time spent on the building by 1.
+
+            /**
+             * We increase the globalTime counter.
+             */
+            globalTime++;       //We increase the global time by 1 day for every iteration.
         }
-
-        System.out.println(globalTime-1);
-        writer.close();
+        writer.close();         //Close the output-stream and return the System resources.
     }
 
 
-
-
-
-
-
-
-
-
-
-    /*public static void main(String[] arg){
-        RBTree tree = new RBTree();
-        MinHeap minHeap = new MinHeap();
-        RBNode t;
-
-        t = tree.addNode(2,10);
-        minHeap.addNode(0, t);
-
-        t = tree.addNode(3,11);
-        minHeap.addNode(0, t);
-
-        t = tree.addNode(1,10);
-        minHeap.addNode(0, t);
-
-        minHeap.increaseKey(5);
-        minHeap.increaseKey(5);
-        minHeap.increaseKey(5);
-        minHeap.increaseKey(5);
-
-        minHeap.increaseKey(5);
-
-        tree.addNode(2,11);
-        tree.addNode(3,11);
-        tree.addNode(4,10);
-        tree.addNode(1,15);
-        tree.remove(1);
-        tree.remove(2);
-        tree.remove(3);
-        tree.remove(4);
-        tree.print();
-
-        tree.print(1,3);
-        //minHeap.print();
-    }
-    */
 }
+
